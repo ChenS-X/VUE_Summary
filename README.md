@@ -251,6 +251,7 @@ Object.assign(this.$data, this.$options.data(this)) // 注意加this
     </script>
     ```
     - 展示效果，可折叠
+    
     ![image text](/images/menu.png)
 
 + vue-devtools调试工具里显示的组件名称有vue中组件name决定
