@@ -191,7 +191,7 @@ Object.assign(this.$data, this.$options.data(this)) // 注意加this
 ```
 这样写完之后，Home和About组件都会被缓存下来。不符合需求
 
-**方法一：**可以利用`keep-alive`中的`include`和`exclude`匹配组件
+**方法一：** 可以利用`keep-alive`中的`include`和`exclude`匹配组件
 + include：字符串或正则表达式。只有名称匹配的组件会被缓存
 + exclude：字符串或正则表达式。任何名称匹配的组件都不会被缓存。
 ```html
@@ -227,7 +227,7 @@ Object.assign(this.$data, this.$options.data(this)) // 注意加this
 </template>
 ```
 
-**方法二：**利用路由规则中的meta添加keepAlive属性为true，也就是当前路由组件要进行缓存。结合v-if使用，当meta中的keepAlive为true进行缓存，否则不缓存，这样更灵活一些。
+**方法二：** 利用路由规则中的meta添加keepAlive属性为true，也就是当前路由组件要进行缓存。结合v-if使用，当meta中的keepAlive为true进行缓存，否则不缓存，这样更灵活一些。
 ```js
 // 路由对象
 {
