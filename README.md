@@ -246,4 +246,4 @@ Object.assign(this.$data, this.$options.data(this)) // 注意加this
 <router-view v-if="!$route.meta.keepAlive" />
 ```
 
-**注意：**被keep-alive缓存的组件，当切换时，因为没有被销毁，所以组件在切换时不会调用created等生命周期函数。这时，可以使用`actived`和`deactived`来获取当前组件是否处于活动状态。
+**注意：** 被keep-alive缓存的组件，当切换时，因为没有被销毁，所以组件在切换时不会调用`created`等生命周期函数。这时，可以使用`actived`和`deactived`来获取当前组件是否处于活动状态。
