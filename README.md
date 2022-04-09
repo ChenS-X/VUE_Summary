@@ -169,6 +169,90 @@ Object.assign(this.$data, this.$options.data(this)) // 注意加this
     </template>
 ```
 + DOM做递归组件时需要调用自身的name
+    - 此处展示一个例子：注意，利用name属性，使用条件编译v-if，设置好限制条件，不能无限递归
+    ```vue
+    <!--menu组件-->
+    <template>
+        <ul>
+            <li v-for="(item, index) in listData">
+                <span @click="handle(item)">{{item.title}}</span>
+                <v-menu :listData="item.children" v-if="item.children" v-show="item.flag"></v-menu>
+            </li>
+        </ul>
+    </template>
+    <script>
+        import VMenu from './VMenu';
+        export.default {
+            name: 'VMenu',
+            components: {
+                VMenu,
+            },
+            props: ['listData'],
+            methods: {
+                handle(item) {
+                    return item.flag = !item.flag
+                }
+            }
+        }
+    </script>
+    ```
+    ```vue
+    <!--父组件-->
+    <template>
+        <div id="app">
+            <v-menu :listData="listData"></v-menu>
+        </div>
+    </template>
+    <script>
+        import VMenu from './VMenu';
+        export.default {
+            components: {
+                VMenu,
+            },
+            data() {
+                return {
+                    listData: [
+                        {
+                            title: '一级菜单',
+                            flag: true,
+                            children: [
+                                {
+                                    title: '二级菜单',
+                                    flag: true,
+                                    children: [
+                                        {
+                                            title: '三级菜单'
+                                        }
+                                    ]
+                                },
+                                {
+                                    title: '二级菜单'
+                                },{
+                                    title: '二级菜单'
+                                }
+                            ]
+                        },
+                        {
+                            title: '一级菜单',
+                            children: [
+                                {
+                                    title: '二级菜单',
+                                    flag: true
+                                }
+                            ]
+                        },
+                        {
+                            title: '一级菜单'
+                        }
+                    ]
+                }
+            }
+        }
+    </script>
+    ```
+    - 展示效果，可折叠
+    ![image text](/images/menu.png)
+
 + vue-devtools调试工具里显示的组件名称有vue中组件name决定
 
 ## 14.keep-alive的原理和作用
