@@ -251,7 +251,7 @@ Object.assign(this.$data, this.$options.data(this)) // 注意加this
     </script>
     ```
     - 展示效果，可折叠
-    
+
     ![image text](/images/menu.png)
 
 + vue-devtools调试工具里显示的组件名称有vue中组件name决定
@@ -332,3 +332,54 @@ Object.assign(this.$data, this.$options.data(this)) // 注意加this
 ```
 
 **注意：** 被keep-alive缓存的组件，当切换时，因为没有被销毁，所以组件在切换时不会调用`created`等生命周期函数。这时，可以使用`actived`和`deactived`来获取当前组件是否处于活动状态。
+
+## 15.vue-router有哪些钩子函数
++ 全局前置守卫 router.beforeEach
+    - 使用`router.beforeEach`注册一个全局前置守卫
+    ```js
+    const router = createRouter();
+    router.beforeEach((to, from) => {
+        // ...
+        // 返回false以取消导航
+        return false
+    });
+    ```
+    - 当一个导航被触发，全局前置守卫按照创建顺序调用。守卫时异步解析执行的，此时导航在所有守卫resolve完之前一直处于**等待**状态。
+    - 每个守卫接受两个参数
+        + to 即将要进入的地方
+        + from 当前导航正要离开的路由
+    - 守卫可以返回值如下：
+        + `false`：取消当前导航，如果浏览器的url改变了（可能是用户手动输入获取浏览器返回按钮），那么url地址会重置到`from`路由对应的地址
+        + 一个**路由地址**：通过一个路由地址跳转到不同的地址，就像调用`router.push`一样，还可以设置诸如`replace:true`或`name:'home'`之类的配置。当前的导航被中断，然后进行一个新的导航，就像`from`一样。
+    - 如果遇到意外情况，可能会抛出一个`Error`，这回取消导航，并调用`router.onError()`注册过的回调。
+    - 如果什么都没有返回，undefined或者返回true的情况，**则导肮是有效的**，并调用下一个导航守卫。
+    - 以上所有都统`async`**函数**和Promise工作方式一样
+    ```js
+    router.beforeEach(async (to, from) => {
+        // canUseAccess()，返回false或者true
+        return await canUseAccess(to);
+    })
+    ```
+    - **可选的第三个参数** `next`
+    这里贴一段官方文档的解释:
+    > 在之前的 Vue Router 版本中，也是可以使用 第三个参数 next 的。这是一个常见的错误来源，可以通过 RFC 来消除错误。然而，它仍然是被支持的，这意味着你可以向任何导航守卫传递第三个参数。在这种情况下，确保 next 在任何给定的导航守卫中都被严格调用一次。它可以出现多于一次，但是只能在所有的逻辑路径都不重叠的情况下，否则钩子永远都不会被解析或报错。这里有一个在用户未能验证身份时重定向到/login的错误用例：
+    ```js
+    // BAD
+    router.beforeEach((to, from, next) => {
+        if (to.name !== 'Login' && !isAuthenticated) next({ name: 'Login' })
+        // 如果用户未能验证身份，则 `next` 会被调用两次
+        next()
+    })
+    ```
+    下面是正确使用方式
+    ```js
+    // GOOD
+    router.beforeEach((to, from, next) => {
+        if (to.name !== 'Login' && !isAuthenticated) next({ name: 'Login' })
+        else next()
+    })
+    ```
++ 全局解析守卫 router.beforeResolve
++ 全局后置守卫 router.afterEach
++ 路由独享守卫 beforeEnter
++ 组件内的守卫 beforeRouterEnter\beforeRouteUpdate\beforeRouteLeave
