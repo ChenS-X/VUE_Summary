@@ -93,3 +93,61 @@ DOM渲染在mounted中就已经完成了
 + beforeDestroy：可以做一个确认停止事件的确认框，清除settimeout等
 + nextTick：更新数据后立即操作DOM（准确的说法是当更新数据，新数据作用到DOM节点上，此时DOM为新数据对应的DOM，操作新数据下的DOM节点）
 
+## 10.Vue组件间通信有哪些方式
++ props/$emit
+    - 父组件通过props，在标签上将参数传递给子组件；子组件通过$emit方式，调用其在标签上通过v-on(@)绑定的方法，然后将数据作为方法的参数传递给父组件
+    ```html
+    <!-- 父组件 -->
+     <div>
+         <Child :name="name" v-on:dataBackToParent="reciveDataFromChild"></Child>
+     </div>
+    ```
+    ```js
+        // 父组件部分代码
+        import Child from 'xxx/Child.vue';
+
+        new Vue({
+            components: {
+                Child,
+            },
+            data() {
+                name: '张三'
+            },
+            methods: {
+                reciveDataFromChild(data) {
+                    console.log(data); // 这里的data就是子组件Child通过$emit(dataBackToParent)返回的数据
+                }
+            }
+        });
+
+        
+        // 子组件js部分代码
+        new Vue({
+            ...
+            props: {
+                name: {
+                    type: String, // 类型
+                    value: '', // 默认值
+                }
+            },
+            mounted() {
+                ...
+                this.$emit('dataBackToParent', {age: 18});
+            }
+        });
+
+
+        // Vue3.0的props和emit，在setup函数中以参数的形式
+        setup(props, { emit }) {
+            // 这里的props就是父组件传递过来的参数，
+            // emit('事件名称', 数据)
+        }
+    ```
++ $emit/$on
++ vuex
++ $attr/$listener
++ provide/inject
++ $parent/$child与ref
+
+## 11.Vue3中的ref
+
