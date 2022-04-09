@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实现简易的vue双向数据绑定</title>
+</head>
+
+<body>
+    <div id="app">
+        <h1>{{message}}</h1>
+        <p v-text="pstr"></p>
+        <input type="text" v-bind:value="value" />
+        <br>
+        <div v-html="html"></div>
+        <button v-on:click="changeData">点击改变参数</button>
+
+        <hr>
+        <p>演示v-model</p>
+        <input type="text" v-model="modelInput" placeholder="请输入" />
+        <p><span>输入的数据是：</span>{{modelInput}}</p>
+    </div>
+    <script src="./js/myvue.js"></script>
+    <!-- <script>
+        const app = document.getElementById('app');
+        var child;
+        var fragment = document.createDocumentFragment();
+        console.dir(app);
+        console.log(child = app.firstChild);
+
+        while (child = app.firstChild) {
+            console.log(child);
+            fragment.appendChild(child);
+        }
+    </script> -->
+    <script>
+        const vue = new Vue({
+            el: '#app',
+            data: function() {
+                return {
+                    message: '你好，Vue',
+                    pstr: '你好',
+                    value: '123',
+                    modelInput: '',
+                    html: `<ul>
+                             <li>{{pstr}}</li>
+                             <li>{{message}}</li>
+                           </ul>`
+                }
+            },
+            methods: {
+                changeData() {
+                    vue.message = '不是吧，啊sir';
+                    vue.value = '我是输入框内容'
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
