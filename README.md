@@ -160,6 +160,90 @@ Object.assign(this.$data, this.$options.data(this)) // 注意加this
 
 ## 13.组件中写name选项有什么用
 + 项目使用keep-alive时，可搭配组件name进行缓存
+```html
+    <template>
+        <keep-alive>
+            <!-- 这里表示home组件会被缓存 -->
+            <router-view include="home"/>    
+        <keep-alive>
+    </template>
+```
 + DOM做递归组件时需要调用自身的name
 + vue-devtools调试工具里显示的组件名称有vue中组件name决定
 
+## 14.keep-alive的原理和作用
+`keep-alive`是vue内置的一个组件。当我们想对某个不想频繁刷新的组件。
+一般情况下，当进行组件切换时，会默认的销毁上一个组件，然后再展示下一个组件的。如果有需求某个组件切换后不进行销毁的话，这个时候就会用到`keep-alive`来实现了。
+假设：当前有Home和About两个组件，希望缓存Home组件
+```html
+<!-- App组件 -->
+<template>
+    <div id="app">
+        <div id="nav">
+            <router-link to="/">Home</router-link>
+            <router-link to="/about">About</router-link>
+        </div>
+        <keep-alive>
+            <router-view />
+        </keep-alive>
+    </div>
+</template>
+```
+这样写完之后，Home和About组件都会被缓存下来。不符合需求
+
+**方法一：**可以利用`keep-alive`中的`include`和`exclude`匹配组件
++ include：字符串或正则表达式。只有名称匹配的组件会被缓存
++ exclude：字符串或正则表达式。任何名称匹配的组件都不会被缓存。
+```html
+<!--用逗号分隔字符串，匹配到a或者b都会被缓存-->
+<keep-alive include="a,b">
+    <router-view />
+</keep-alive>
+
+<!--正则表达式-->
+<keep-alive include="/a|b/">
+    <router-view />
+</keep-alive>
+
+<!--数组，可以配合v-bind使用-->
+<keep-alive :include="['a', 'b']">
+    <router-view />
+</keep-alive>
+```
+
+回到刚才的例子中，如果想要Home组件匹配到，则需要改变App组件写法
+```html
+<!-- include匹配Home组件 -->
+<template>
+    <div id="app">
+        <div id="nav">
+            <router-link to="/">Home</router-link>
+            <router-link to="/about">About</router-link>
+        </div>
+        <keep-alive include="home">
+            <router-view />
+        </keep-alive>
+    </div>
+</template>
+```
+
+**方法二：**利用路由规则中的meta添加keepAlive属性为true，也就是当前路由组件要进行缓存。结合v-if使用，当meta中的keepAlive为true进行缓存，否则不缓存，这样更灵活一些。
+```js
+// 路由对象
+{
+    path: '/home',
+    name: 'home',
+    meta: {
+        keepAlive: true
+    },
+    component: Home
+}
+```
+```html
+<keep-alive>
+    <router-view v-if="$route.meta.keepAlive" />
+</keep-alive>
+<router-view v-if="!$route.meta.keepAlive" />
+```
+
+**注意：**被keep-alive缓存的组件，当切换时，因为没有被销毁，所以组件在切换时不会调用created等生命周期函数。这时，可以使用`actived`和`deactived`来获取当前组件是否处于活动状态。
