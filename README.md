@@ -151,3 +151,15 @@ DOM渲染在mounted中就已经完成了
 
 ## 11.Vue3中的ref
 
+
+## 12.Vue中怎么重置data
+使用Object.assign()，vm.$data可以获取当前状态下的data，vm.$options.data(this)可以获取到组件初始状态下的data。
+```js
+Object.assign(this.$data, this.$options.data(this)) // 注意加this
+```
+
+## 13.组件中写name选项有什么用
++ 项目使用keep-alive时，可搭配组件name进行缓存
++ DOM做递归组件时需要调用自身的name
++ vue-devtools调试工具里显示的组件名称有vue中组件name决定
+
