@@ -501,3 +501,53 @@ Object.assign(this.$data, this.$options.data(this)) // 注意加this
 10. 调用全局`afterEach`
 11. 触发DOM更新
 12. 调用`beforeRouterEnter`守卫中传给`next`的回调函数，创建好的实例会作为回调函数的参数被传入。
+
+## 16.Vue-Router中hash和history的区别
+## 17.Vue和React简单对比
+1. 监听数据变化的实现原理不同
++ Vue通过数据劫持getter/setter，能够精确快速计算出Virtual DOM的差异。不需要重新渲染整个组件树。
++ React默认是通过比较引入方式进行的，如果不优化，每当应用的状态`state`被改变时，全部子组件都会重新渲染
++ Vue不需要特别的优化就能达到很好的性能，而对于React而言，需要通过PureComponents/shouldComponentUpdate这个生命周期方法进行控制。如果你的应用中交互复杂，需要处理大量的UI变化，那么使用Vritual DOM是一个好主意。如果你更新元素并不频繁，那么Virtual DOM并不一定适用，性能很可能还不如直接操作DOM
+Vue和React设计理念的区别，Vue使用的可变数据，而React更强调数据的不可变。
+
+2. 数据流的不同
++ Vue中默认支持双向绑定，组件与DOM之间可通过v-model双向绑定。但是，父子组件之间，props在2.x版本是单向数据流
++ React一直提倡的是单向数据流，它称之为onChange/setState模式，不过由于我们一般都会用Vuex以及Redux等单向数据流的状态管理框架，因此很多时候我么感受不到这一点的区别
+
+3. 模板渲染方式的不同
+在表层，模板语法不同
++ React的通过JSX渲染模板
++ Vue是通过一种拓展的HTML语法进行渲染
+在深层，模板原理不同，这才是他们的本质区别
++ React是在组件JS代码中，通过原生JS实现模板中的常见语法，比如插值，条件，循环等，都是通过JS语法实现的。
++ Vue是在和组件JS代码分离的单独的模板中，通过指令来实现的，比如条件语句需要v-if来实现。
+
+## 18.Vue的nextTick的原理是什么?
+1. 为什么需要nextTick
+Vue是异步修改DOM的，并且不鼓励开发者直接接触DOM，但有时业务需要把必须对数据更改--刷新后的DOM做相应的处理，这个时候可以使用Vue.nextTick(callback)这个api
+2. 理解原理前的准备
+首先需要知道事件循环中的宏任务和微任务这两个概念
+常见的宏任务有 script，setTimeOut，setInterval，setImmediate，I/O，UI rendering
+常见的微任务有 process.nextTick(Node.js)，Promise.then()，MutationObserver；
+3. 理解nextTick
+`nextTick`的原理正式Vue通过异步队列控制DOM更新和`nextTick`回调函数先后执行的方式。
+**关于`nextTick`，这里引用官方文档的解释**
+> 可能你还没有注意到，Vue 在更新 DOM 时是异步执行的。只要侦听到数据变化，Vue 将开启一个队列，并缓冲在同一事件循环中发生的所有数据变更。如果同一个 watcher 被多次触发，只会被推入到队列中一次。这种在缓冲时去除重复数据对于避免不必要的计算和 DOM 操作是非常重要的。然后，在下一个的事件循环“tick”中，Vue 刷新队列并执行实际 (已去重的) 工作。Vue 在内部对异步队列尝试使用原生的 Promise.then、MutationObserver 和 setImmediate，如果执行环境不支持，则会采用 setTimeout(fn, 0) 代替。
+
+例如，当你设置 vm.someData = 'new value'，该组件不会立即重新渲染。当刷新队列时，组件会在下一个事件循环“tick”中更新。多数情况我们不需要关心这个过程，但是如果你想基于更新后的 DOM 状态来做点什么，这就可能会有些棘手。虽然 Vue.js 通常鼓励开发人员使用“数据驱动”的方式思考，避免直接接触 DOM，但是有时我们必须要这么做。为了在数据变化之后等待 Vue 完成更新 DOM，可以在数据变化之后立即使用 Vue.nextTick(callback)。这样回调函数将在 DOM 更新完成后被调用。例如：
+```html
+<div id="example">{{message}}</div>
+```
+```js
+var vm = new Vue({
+  el: '#example',
+  data: {
+    message: '123'
+  }
+})
+vm.message = 'new message' // 更改数据
+vm.$el.textContent === 'new message' // false
+Vue.nextTick(function () {
+  vm.$el.textContent === 'new message' // true
+})
+```
