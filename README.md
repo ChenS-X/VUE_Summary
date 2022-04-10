@@ -551,3 +551,210 @@ Vue.nextTick(function () {
   vm.$el.textContent === 'new message' // true
 })
 ```
+
+## 19.Vuex有哪几种属性
+有五种：分别是State，Getter，Mutation，Action，Module
+Vuex的流程图：
+![image text](/images/vuex.png)
+
++ Getter：理解为state的计算属性
+Vuex 允许我们在 store 中定义“getter”（可以认为是 store 的计算属性）。就像计算属性一样，getter 的返回值会根据它的依赖被缓存起来，且只有当它的依赖值发生了改变才会被重新计算。
+```js
+const store = new Vuex.Store({
+    state: {
+        todos: [
+            {id: 1, title: '已完成', done: true}
+            {id: 2, title: '未完成', done: false}
+        ]
+    },
+    getters: {
+        // 这个doneTodos的getter函数，接受的第一个参数就是state
+        doneTodos(state) {
+            // 筛选出state中todos数据中done === true的数据
+            return state.todos.filter(item => item.done)
+        }
+    }
+})
+```
+**通过属性访问**
+
+> Getter 会暴露为 store.getters 对象，你可以以属性的形式访问这些值:
+```js
+store.getters.doneTodos // -> [{ id: 1, text: '...', done: true }]
+```
+
+Getter也可以接受其他getter作为第二个参数
+```js
+getters: {
+  // ...
+  // 计算出done的项目的数量
+  doneTodosCount: (state, getters) => {
+    return getters.doneTodos.length
+  }
+}
+```
+**通过方法访问**
+
+> 你也可以通过让 getter 返回一个函数，来实现给 getter 传参。在你对 store 里的数组进行查询时非常有用。
+```js
+getters: {
+  // ...
+  // 根据传入的id查找数据
+  getTodoById: (state) => (id) => {
+    return state.todos.find(todo => todo.id === id)
+  }
+}
+```
+```js
+store.getters.getTodoById(2) // -> { id: 2, text: '...', done: false }
+```
+需要注意的是，getter通过方法访问时，每次都会进行调用，不会缓存结果
+
++ Mutation：更改 Vuex 的 store 中的状态的唯一方法是提交 mutation
+    - Mutation必须是同步函数
+    - 提交Mutation
+    ```js
+    const store = new Vuex.Store({
+        state: {
+            count: 1
+        },
+        mutations: {
+            increment (state) {
+                // 变更状态
+                state.count++
+            }
+        }
+    });
+    ```
+    ```js
+    store.commit('eventname'); 
+    this.$store.commit('eventname'); // 组件中提交
+    this.$store.commit('eventname', {data: 123}) // 带参数
+    this.$store.commit({
+        type: 'eventname',
+        amount: 10
+    }); // 对象风格提交，此时在store中对应eventname的函数中，第二个参数payload是当前提交的整个对象，也就是要访问amount时，需要payload.amount来访问
+    ```
+    - Mutation 需遵守 Vue 的响应规则
+        + 最好提前在你的 store 中初始化好所有所需属性。
+        + 当需要在对象上添加新属性时，你应该
+        + 使用 Vue.set(obj, 'newProp', 123), 或者
+        + 以新对象替换老对象。例如，利用对象展开运算符 (opens new window)我们可以这样写：
+        ```js
+        state.obj = { ...state.obj, newProp: 123 }
+        ```
++ Action
+    - Action 提交的是 mutation，而不是直接变更状态。
+    - Action 可以包含任意异步操作。
+    ```js
+    const store = new Vuex.Store({
+        state: {
+            count: 0
+        },
+        mutations: {
+            increment (state) {
+                state.count++
+            }
+        },
+        actions: {
+            // 此处的context为整个store实例对象，所以可以调用context.commit提交mutatio
+            increment (context) {
+                context.commit('increment')
+            }
+        }
+    });
+    ```
+    - Action 通过`store.dispatch`方法触发：
+    ```js
+    store.dispatch('increment')
+    ```
+    - Action中执行异步操作：
+    ```js
+    actions: {
+        checkout ({ commit, state }, products) {
+            // 把当前购物车的物品备份起来
+            const savedCartItems = [...state.cart.added]
+            // 发出结账请求，然后乐观地清空购物车
+            commit(types.CHECKOUT_REQUEST)
+            // 购物 API 接受一个成功回调和一个失败回调
+            shop.buyProducts(
+                products,
+                // 成功操作
+                () => commit(types.CHECKOUT_SUCCESS),
+                // 失败操作
+                () => commit(types.CHECKOUT_FAILURE, savedCartItems)
+            )
+        }
+    }
+    ```
+    - 组合Action
+    > Action 通常是异步的，那么如何知道 action 什么时候结束呢？更重要的是，我们如何才能组合多个 action，以处理更加复杂的异步流程？首先，你需要明白 store.dispatch 可以处理被触发的 action 的处理函数返回的 Promise，并且 store.dispatch 仍旧返回 Promise：
+    ```js
+    actions: {
+        actionA ({ commit }) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    commit('someMutation')
+                    resolve()
+                }, 1000)
+            })
+        }
+    }
+    ```
+    > 现在你可以:
+    ```js
+    store.dispatch('actionA').then(() => {
+        // ...
+    });
+    ```
+    > 在另外一个 action 中也可以：
+    ```js
+    actions: {
+        // ...
+        actionB ({ dispatch, commit }) {
+            return dispatch('actionA').then(() => {
+                // 在actionA异步完成之后，再去commit需要的操作
+                commit('someOtherMutation')
+            });
+        }
+    }
+    ```
+    > 最后，如果我们利用 async / await，我们可以如下组合 action：
+    ```js
+    // 假设 getData() 和 getOtherData() 返回的是 Promise
+    actions: {
+        async actionA ({ commit }) {
+            commit('gotData', await getData())
+        },
+        async actionB ({ dispatch, commit }) {
+            await dispatch('actionA') // 等待 actionA 完成
+            commit('gotOtherData', await getOtherData())
+        }
+    }
+    ```
++ Module:
+> 由于使用单一状态树，应用的所有状态会集中到一个比较大的对象。当应用变得非常复杂时，store 对象就有可能变得相当臃肿。为了解决以上问题，Vuex 允许我们将 store 分割成模块（module）。每个模块拥有自己的 state、mutation、action、getter、甚至是嵌套子模块——从上至下进行同样方式的分割：
+```js
+const moduleA = {
+  state: () => ({ ... }),
+  mutations: { ... },
+  actions: { ... },
+  getters: { ... }
+}
+
+const moduleB = {
+  state: () => ({ ... }),
+  mutations: { ... },
+  actions: { ... }
+}
+
+const store = new Vuex.Store({
+  modules: {
+    a: moduleA,
+    b: moduleB
+  }
+})
+
+store.state.a // -> moduleA 的状态
+store.state.b // -> moduleB 的状态
+```
