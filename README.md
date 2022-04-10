@@ -380,6 +380,124 @@ Object.assign(this.$data, this.$options.data(this)) // 注意加this
     })
     ```
 + 全局解析守卫 router.beforeResolve
+    - `router.beforeResolve和router.beforeEach类似，每次导航都会触发，但是确保在导航被确认之前，**同时在所有组件内部守卫和异步路由组件被解析之后，解析守卫就被正式调用**。这里有一个例子，确保用户可以访问自定义meta属性requireCamera的路由：
+    ```js
+    router.beforeResolve(async to => {
+        if(to.meta.requireCamera) {
+            try{
+                return await askForCameraPermission()
+            }catch(error) {
+                if(error instanceOf NotAllowedError) {
+                    // ...处理错误，然后return false取消导航
+                    return false;
+                } else {
+                    // 意料之外的错误，取消导航并把错误传给全局处理器
+                    throw error;
+                }
+            }
+        }
+    })
+    ```
+    `router.beforeResolve`是获取数据或者执行任何其他操作（如果用户无法进入页面时你想进行的操作）的理想位置
+
 + 全局后置守卫 router.afterEach
+    - 与守卫不同的是，`router.afterEach`不会接受next函数，不会改变导航本身
+    - 它对于分析、更改页面、声明页面等辅助功能很有作用
+    - 它反映了`navigation.failure`作为第三个参数
+    ```js
+    router.afterEach((to, from, failure) => {
+        if(!failure) sendToAnynics();
+    })
+    ```
 + 路由独享守卫 beforeEnter
+    - 可在路由配置里面定义`beforeEnter`
+    ```js
+    const routes = [
+        {
+            path: '/user/:id',
+            component: UserDetails,
+            beforeEnter: (to, from) => {
+                // reject the navigation
+                return false;
+            }
+        }
+    ]
+    ```
+    - `beforeEnter`只在**进入路由**时触发，不会在`params`、`query`、`hash`改变时触发，例如下面的情况：从`user/2`进入`user/3`，或者从`user/2#info`进入`user/2#projects`。
+    - 你也可以将一个**函数数组**传递给`beforeEnter`，这在为不同的路由重用守卫时很有用：
+    ```js
+    function removeQueryParams(to) {
+        if(Object.keys(to.query).length) {
+            return {path: to.path, query:{}, hash: to.hash }
+        }
+    }
+
+    function removeHash(to) {
+        if(to.hash) return {path: to.path, query: to.query, hash: ''};
+    }
+
+    const routes = [
+        {
+            path: '/user/：id',
+            conponent: Userdetails,
+            beforeEnter: [removeQueryParams, removeHash]
+        },
+        {
+            path: '/about',
+            component: About,
+            beforeEnter: [removeHash]
+        }
+    ]
+    ```
 + 组件内的守卫 beforeRouterEnter\beforeRouteUpdate\beforeRouteLeave
+    - 官方的例子：
+    ```js
+    const UserDetails = {
+        template: `...`,
+        beforeRouteEnter(to, from) {
+            // 在渲染该组件的对应路由被验证前调用
+            // 不能获取组件实例 `this` ！
+            // 因为当守卫执行时，组件实例还没被创建！
+        },
+        beforeRouteUpdate(to, from) {
+            // 在当前路由改变，但是该组件被复用时调用
+            // 举例来说，对于一个带有动态参数的路径 `/users/:id`，在 `/users/1` 和 `/users/2` 之间跳转的时候，
+            // 由于会渲染同样的 `UserDetails` 组件，因此组件实例会被复用。而这个钩子就会在这个情况下被调用。
+            // 因为在这种情况发生的时候，组件已经挂载好了，导航守卫可以访问组件实例 `this`
+        },
+        beforeRouteLeave(to, from) {
+            // 在导航离开渲染该组件的对应路由时调用
+            // 与 `beforeRouteUpdate` 一样，它可以访问组件实例 `this`
+        },
+    }
+    ```
+    - `beforeRouteEnter`守卫 不能 访问`this`，因为守卫在导航确认前被调用，因此即将登场的新组件还没被创建。不过，你可以通过传一个回调给`next`来访问组件实例。在导航被确认的时候执行回调，并且把组件实例作为回调方法的参数：
+    ```js
+    beforeRouteEnter (to, from, next) {
+        next(vm => {
+            // 通过 `vm` 访问组件实例
+        })
+    }
+    ```
+    - 注意`beforeRouteEnter`是支持给`next`传递回调的唯一守卫。对于`beforeRouteUpdate`和`beforeRouteLeave`来说，`this`已经可用了，所以不支持 传递回调，因为没有必要了：
+    - 这个**离开守卫**通常用来预防用户在还未保存修改前突然离开。该导航可以通过返回**false**来取消.
+    ```js
+    beforeRouteLeave (to, from) {
+        const answer = window.confirm('Do you really want to leave? you have unsaved changes!')
+        if (!answer) return false
+    }
+    ```
+
++ 完整的导航解析流程:
+1. 导航被触发（点击router-link或者router.push等操作）
+2. 在失活的组件里调用`beforeRouterLeave`守卫
+3. 调用全局`beforeEach`守卫
+4. 在重用的组件里调用`beforeRouterUpdate`守卫
+5. 在路由配置里调用`beforeEnter`守卫
+6. 解析异步路由组件
+7. 在被激活的组件里调用`beforeRouterEnter`
+8. 调用全局的`beforeResolve`守卫
+9. 导航被确认
+10. 调用全局`afterEach`
+11. 触发DOM更新
+12. 调用`beforeRouterEnter`守卫中传给`next`的回调函数，创建好的实例会作为回调函数的参数被传入。
