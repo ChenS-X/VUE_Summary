@@ -758,3 +758,29 @@ const store = new Vuex.Store({
 store.state.a // -> moduleA 的状态
 store.state.b // -> moduleB 的状态
 ```
+
+## 20.Vue首屏加载优化
++ 把不常改变的库放到`index.html`中，通过cdn引入，然后找到`build/webpack.base.conf.js`文件，在`module.exports = {}`中添加以下代码
+```js
+externals: {
+    'vue': 'Vue',
+    'vue-router': 'VueRouter',
+    'element-ui': 'ELEMENT'
+}
+```
+这样，`webpack`就不会把vue.js\vue-router\element-ui库打包了。这是通过减少最终打包出来的包体积进行优化。
+
++ vue路由懒加载
+```js
+const routes = [
+    {
+        path: '/home',
+        name: 'home',
+        component: () => import Home form 'Home.vue';
+    }
+]
+```
++ 不生成map文件
+    找到`config/index.js`，修改为`productionSourceMap: false`
++ vue组件尽量不要全局引入
++ 使用更轻量级的工具库
